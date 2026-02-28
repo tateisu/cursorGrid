@@ -27,7 +27,7 @@ class ActionPngToXCursor : Subcommand(
         if (verbose) println("Png2xcur: inJson=$inJson, outFile=$outFile")
 
         val jsonFile = File(inJson)
-        if (!jsonFile.exists()) {
+        if (!jsonFile.isFile) {
             println("File not found: ${jsonFile.absolutePath}")
             return
         }

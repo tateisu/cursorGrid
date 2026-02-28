@@ -1,6 +1,9 @@
 package jp.juggler.cursorGrid.encoder
 
 import jp.juggler.cursorGrid.data.XCursorImageMeta
+import java.awt.AlphaComposite
+import java.awt.RenderingHints
+import java.awt.image.BufferedImage
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
@@ -27,8 +30,8 @@ private fun List<XCursorImage>.writeFile(outputFile: File) {
         val dataBuffers = mutableListOf<ByteBuffer>()
 
         for (img in this) {
-            val chunkSize = XCursorConstants.CHUNK_HEADER_SIZE + img.meta.width * img.meta.height * 4
-
+            val chunkSize = XCursorConstants.CHUNK_HEADER_SIZE +
+                img.meta.width * img.meta.height * 4
             val chunkBuffer = ByteBuffer.allocate(chunkSize)
             chunkBuffer.order(ByteOrder.LITTLE_ENDIAN)
             chunkBuffer.putInt(chunkSize)
@@ -60,27 +63,53 @@ private fun List<XCursorImage>.writeFile(outputFile: File) {
     }
 }
 
+fun File.readPngAndResize(
+    targetWidth: Int,
+    targetHeight: Int,
+): BufferedImage {
+    val image = ImageIO.read(this)
+        ?: error("Failed to read PNG: $canonicalPath")
+    return when {
+        image.width == targetWidth &&
+            image.height == targetHeight -> image
+
+        else -> BufferedImage(
+            targetWidth,
+            targetHeight,
+            BufferedImage.TYPE_INT_ARGB
+        ).also { resized ->
+            val g2d = resized.createGraphics()
+            try {
+                g2d.composite = AlphaComposite.Src
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+                g2d.drawImage(image, 0, 0, targetWidth, targetHeight, null)
+            } finally {
+                g2d.dispose()
+            }
+        }
+    }
+}
+
 fun List<XCursorImageMeta>.encodeXCursor(baseDir: File, outputFile: File) {
-    map { imgMeta ->
-        val pngFile = File(baseDir, imgMeta.pngFile!!)
-        val bufferedImage = ImageIO.read(pngFile)
-            ?: error("Failed to read PNG: ${pngFile.absolutePath}")
-
-        val width = bufferedImage.width
-        val height = bufferedImage.height
-        val pixels = IntArray(width * height)
-        bufferedImage.getRGB(0, 0, width, height, pixels, 0, width)
-
+    map {
         XCursorImage(
-            pixels = pixels,
-            meta = XCursorImageMeta(
-                size = imgMeta.size,
-                width = width,
-                height = height,
-                xHot = imgMeta.xHot,
-                yHot = imgMeta.yHot,
-                delay = imgMeta.delay,
-            )
+            meta = it,
+            pixels = IntArray(it.width * it.height).also { pixels ->
+                File(baseDir, it.pngFile!!).readPngAndResize(
+                    targetWidth = it.width,
+                    it.height,
+                ).getRGB(
+                    0,
+                    0,
+                    it.width,
+                    it.height,
+                    pixels,
+                    0,
+                    it.width,
+                )
+            },
         )
     }.writeFile(outputFile)
 }
