@@ -29,13 +29,18 @@ java -jar cursorGrid.jar (options) <action> {action-args...}
 ## grid :アイコンテーマをグリッド画像に出力
 
 ```
-java -jar cursorGrid.jar grid inFolder outFile
+java -jar cursorGrid.jar grid [-b color] [-F fontFile] inFolder outFile
 ```
 
 - inFolderはXウィンドウのカーソルテーマの1つを指定する。
     - カーソルテーマのフォルダ、または圧縮されたzipファイル
 - カーソル画像を名前順ソート、デコード、グリッド状に並べたPNG画像を出力する
 - テーマのインデクスの対応サイズなどを標準出力に列挙
+- -b color :背景色を指定（デフォルト: 757575）
+    - `RRGGBB` または `#RRGGBB` :不透明色
+    - `AARRGGBB` または `#AARRGGBB` :アルファ値付き
+    - `transparent` :透明
+- -F fontFile :フォントファイルを指定（TTF/OTF、デフォルト: sans-serif）
 
 ## xcur2png :XCursorファイルのデコード
 
