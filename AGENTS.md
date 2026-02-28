@@ -78,5 +78,3 @@ README.md                   # Usage documentation
 - ✅ Implemented `xcur2png` command with JSON metadata output
 - ✅ Implemented `png2xcur` command
 - ✅ Fixed ByteBuffer position bug in encoder
-- ⚠️ Animation frame filename generation has a bug (first frame detection issue) - deprioritized
-
